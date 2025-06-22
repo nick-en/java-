@@ -1,10 +1,9 @@
 <%@ page contentType="text/html; charset=UTF-8" language="java" %>
-<%@ page session="true" %>
 <%
-    String statusMessage = (String) session.getAttribute("status_message");
-    if (statusMessage != null) {
-        session.removeAttribute("status_message");
-    }
+String 狀態訊息 = (String) session.getAttribute("status_message");
+if (狀態訊息 != null) {
+    session.removeAttribute("status_message");
+}
 %>
 <!DOCTYPE html>
 <html lang="zh-Hant">
@@ -25,18 +24,18 @@
 <div class="container">
   <h2 class="title text-center text-primary">🚗 車牌違規巡查</h2>
 
-  <% if (statusMessage != null && !statusMessage.isEmpty()) { %>
-    <div class="alert alert-info text-center"><%= statusMessage %></div>
+  <% if (狀態訊息 != null && !狀態訊息.isEmpty()) { %>
+    <div class="alert alert-info text-center"><%= 狀態訊息 %></div>
   <% } %>
 
-  <form action="CheckViolationServlet" method="post" class="card p-4 shadow-sm mb-4" id="form">
+  <form action="檢查違規.jsp" method="post" class="card p-4 shadow-sm mb-4" id="form">
     <input type="hidden" name="mode" id="mode" value="insert">
     <input type="hidden" name="record_id" id="record_id" value="">
     <div class="mb-3">
       <label for="plate" class="form-label">請輸入車牌號碼：</label>
       <input type="text" class="form-control" id="plate" name="plate" list="plateList"
              placeholder="例如：ABC-1234" required
-             pattern="[A-Z]{3}-\\d{4}"
+             pattern="[A-Z]{3}-\d{4}"
              title="格式需為3碼英文+1個'-'+4碼數字，例如：ABC-1234">
       <datalist id="plateList"></datalist>
     </div>
@@ -45,7 +44,7 @@
     </div>
   </form>
 
-  <form action="BatchCheckServlet" method="post" enctype="multipart/form-data" class="card p-4 shadow-sm mb-4">
+  <form action="批次判斷.jsp" method="post" enctype="multipart/form-data" class="card p-4 shadow-sm mb-4">
     <div class="mb-3">
       <label for="file" class="form-label">📂 批次上傳車牌（CSV 或 TXT）</label>
       <input type="file" name="file" id="file" accept=".csv,.txt" class="form-control" required>
@@ -73,13 +72,12 @@
 
 <script>
 function 載入違規清單() {
-  fetch('ShowAllViolatorsServlet')
+  fetch('顯示違規使用者.jsp')
     .then(res => res.text())
     .then(html => document.getElementById('violator-list').innerHTML = html);
 }
-
 function 載入今日違規清單() {
-  fetch('ShowTodayViolatorsServlet')
+  fetch('顯示今日違規.jsp')
     .then(res => res.text())
     .then(html => {
       document.getElementById('today-list').innerHTML = html;
@@ -107,15 +105,14 @@ function 載入今日違規清單() {
     });
 }
 
-// 🔍 車牌輸入自動完成
+// 🔍 車牌輸入自動完成（已修正）
 const plateInput = document.getElementById("plate");
 plateInput.addEventListener("input", function () {
-  this.value = this.value.toUpperCase(); // 自動轉大寫
-
+  this.value = this.value.toUpperCase();
   const keyword = this.value;
   if (!keyword) return;
 
-  fetch("SuggestPlatesServlet?key=" + encodeURIComponent(keyword))
+  fetch('車牌建議.jsp?key=' + encodeURIComponent(keyword))
     .then(res => res.json())
     .then(data => {
       const list = document.getElementById("plateList");
@@ -130,6 +127,17 @@ plateInput.addEventListener("input", function () {
 
 載入違規清單();
 載入今日違規清單();
+
+function 刪除資料() {
+  const recordId = document.getElementById("record_id").value;
+  if (!recordId) {
+    alert("⚠️ 請先使用表單選取要刪除的資料");
+    return;
+  }
+  if (!confirm("確定要刪除這筆違規資料嗎？")) return;
+  document.getElementById("mode").value = "delete";
+  document.getElementById("form").submit();
+}
 
 document.getElementById("form").addEventListener("submit", function () {
   setTimeout(() => {
